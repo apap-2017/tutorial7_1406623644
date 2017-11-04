@@ -1,0 +1,166 @@
+WEB SERVICE
+___________
+Pada kali ini saya telah belajar tentang apa itu web service, web service adalah bagaimana cara mengkomunikasikan
+dalam contoh ini yaitu service consumer dan service producer, Untuk dapat berkomunikasi dengan service consumer, 
+service producer menyediakan web service yang dapat dikonsumsi oleh service consumer. Web service merupakan sebuah URL
+yang akan mengembalikan data dalam representasi yang telah disepakati seperti JSON atau
+XML. 
+
+LATIHAN
+_______
+*note saya membuat kedua project terpisah dan tidak dalam satu folder karena di eclipse akan selalu menempati default
+workspace sehingga akan selalu terpisah, solusi nya saya membuat nya terpisah dan ketika di push akan dalam satu folder 
+yang sama
+
+*note sebelumnya pada main class harus ditambahkan method ini:
+@Bean
+	public RestTemplate restTemplate() {
+	    return new RestTemplate();
+	}
+
+jika tidak maka dari latihan nomer 3 akan terjadi fieldset yang tidak terdefinisi yaitu RestTemplate
+----------------------------------------------------------------------------------------------------
+1. 
+
+method:
+ @RequestMapping("/student/viewall")
+	 public List<StudentModel> view (Model model)
+	 {
+	     List<StudentModel> students = studentService.selectAllStudents ();
+	     model.addAttribute ("students", students);
+
+	     return students;
+	 }
+
+penjelasan: pada method ini dibuat sebuah request mapping untuk memperoleh web service REST yang dihasilkan oleh
+/rest/student/viewall, tinggal mengikuti cara sebelumnya, mengganti viewall sesuai dengan tipenya yaitu ArrayList
+dan mereturn segala mahasiswa yang terdaftar di database
+--------------------------------------------------------
+
+2. 
+
+method:
+
+@RestController
+@RequestMapping("/rest")
+public class CourseRestController {
+	@Autowired
+	CourseService courseService;
+	
+	@RequestMapping("/course/view/{id_course}")
+    public CourseModel viewPath (Model model,
+            @PathVariable(value = "id_course") String id_course)
+    {
+        CourseModel course = courseService.selectCourse (id_course);
+        CourseModel courseNot = courseService.selectCourse("0");
+        if (course != null) {
+            model.addAttribute ("course", course);
+            return course;
+        } else {
+            model.addAttribute ("course", course);
+            return courseNot;
+        }
+    }
+	
+	 @RequestMapping("/course/viewall")
+	    public List<CourseModel> view (Model model)
+	    {
+	        List<CourseModel> courses = courseService.selectAllCourses();
+	        model.addAttribute ("courses", courses);
+
+	        return courses;
+	    }
+}
+
+penjelasan: pada dasarnya kita tinggal mengikuti apa yang sudah kita kerjakan diatas tinggal disesuaikan dengan 
+controller Course pada package controller tinggal kita ganti dengan return value nya yang viewpath mereturn CourseModel
+sedangkan yang view mereturn ArrayList dan nantinya akan menghasilkan keluaran yang sama seperti diatas.
+--------------------------------------------------------------------------------------------------------
+
+3. 
+
+method:
+@Override
+	public List<StudentModel> selectAllStudents ()
+	{
+		log.info ("REST - select all students");
+		return studentDAO.selectAllStudents();
+	}
+
+penjelasan: sama seperti latihan yang sebelumnya kita tinggal mengikuti cara yang sudah dikerjakan sebelumnya apalagi
+ini mengimplement studentService sehingga kita tinggal mereturn service yang sudah dibuat.
+------------------------------------------------------------------------------------------
+
+4. 
+method:
+
+-CourseDAO:
+public interface CourseDAO {
+	
+
+	CourseModel selectCourse(String id_course);
+
+	List<CourseModel> selectAllCourse();
+}
+
+-CourseDAOImpl:
+@Service
+public class CourseDAOImpl implements CourseDAO {
+
+	@Autowired
+	private RestTemplate restTemplate;
+
+	@Override
+	public CourseModel selectCourse(String id_course) {
+		CourseModel course = restTemplate.getForObject("http://localhost:8080/rest/course/view/" + id_course,
+				CourseModel.class);
+		return course;
+	}
+
+	@Override
+	public List<CourseModel> selectAllCourse () {
+		List<CourseModel> courses = restTemplate.getForObject("http://localhost:8080/rest/course/viewall",List.class);
+		return courses;
+	}
+}
+
+-CourseServiceRest:
+@Slf4j
+@Service
+@Primary
+public class CourseServiceRest implements CourseService {
+
+	@Autowired
+	private CourseDAO courseDAO;
+	
+	@Override
+    public     CourseModel    selectCourse   ( String id_course)
+       {
+         log . info    ( "REST   -   select   course   with   id_course  {}" ,id_course );              
+       return courseDAO.selectCourse(id_course);
+       }
+	
+	@Override
+        public     List < CourseModel >    selectAllCourses ()        
+		{
+          log . info    ( "REST   -   select   all   course" );
+          List<CourseModel> courses = courseDAO.selectAllCourse();
+          return courses;
+		}
+
+    public void addCourse (StudentModel  student ){}
+
+    public void deleteCourse  (String npm ){}
+	
+    public void updateStudent (StudentModel student )     {}
+    
+    public void addCourse ( String npm, String idCourse )  {}
+
+}
+
+penjelasan:
+Sama seperti sebelumnya kita tinggal mencatut apa yang sebelumnya sudah kita kerjakan dan selebihnya kita sesuaikan
+terhadap service maupun dao/mapper yang kita buat bedanya pada kelas CourseServiceRest adalah kita tidak bisa meng-override
+karena akan menghasilkan beberapa error dan beberapa method yang diimplementasi
+
+*******************************************************************J**************************************************************
